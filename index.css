@@ -4,7 +4,7 @@
 
 #editor {
     height: 350px;
-    width: 100%;
+    width : 100%;
 }
 
 .form-control[readonly] {
@@ -32,4 +32,5 @@ textarea {
     top     : 10px;
     right   : 0;
     left    : 0;
+    z-index : 5;
 }

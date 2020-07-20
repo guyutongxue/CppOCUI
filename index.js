@@ -94,7 +94,7 @@ editor.setTheme("ace/theme/clouds");
 editor.session.setMode("ace/mode/c_cpp");
 editor.commands.addCommand({
     name: "myCommand",
-    bindKey: { win: "Ctrl-Enter", mac: "Command-Enter" },                
+    bindKey: { win: "Ctrl-Enter", mac: "Command-Enter" },
     exec: () => compile()
 });
 editor.focus();
@@ -103,6 +103,7 @@ editor.focus();
     const params = new URLSearchParams(window.location.search);
     if (params.has('code')) {
         editor.setValue(params.get('code'));
+        editor.clearSelection();
     }
     $('[data-toggle="popover"]').popover();
 }
