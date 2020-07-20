@@ -1,0 +1,35 @@
+:root {
+    --code-font-family: Inconsolata, Consolas, Menlo, Monaco, "Andale Mono WT", "Andale Mono", "Lucida Console", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Courier New", Courier, monospace
+}
+
+#editor {
+    height: 350px;
+    width: 100%;
+}
+
+.form-control[readonly] {
+    background-color: white;
+}
+
+#compilerMessage {
+    font-size  : smaller;
+    font-family: var(--code-font-family);
+    white-space: pre-wrap;
+    min-height : 5em;
+}
+
+textarea {
+    font-family: var(--code-font-family);
+}
+
+#stdout.error-output {
+    background-color: #f8d7da;
+}
+
+#notify {
+    position: fixed;
+    margin  : auto;
+    top     : 10px;
+    right   : 0;
+    left    : 0;
+}
