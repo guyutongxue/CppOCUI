@@ -1,0 +1,120 @@
+<!doctype html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>C 在线编译运行</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="//at.alicdn.com/t/font_1955402_f2p86a040h9.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    <!-- Ace Editor -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/ace.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/ext-beautify.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/ext-language_tools.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/mode-c_cpp.min.js"></script>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/theme-clouds.min.js"></script>
+    <link href="../index.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <div class="px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
+            <h1 class="display-4">C 在线编译运行</h1>
+            <p class="lead">由 <a href="https://wandbox.org/" target="_blank">Wandbox</a> 提供编译运行 API</p>
+        </div>
+        <div class="row">
+            <div class="col-md-3 d-flex flex-column justify-content-between">
+                <div class="row mb-3">
+                    <h3>选项</h3>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text">编译器</label>
+                        </div>
+                        <input class="form-control" value="GCC 10.1.0" disabled>
+                        </input>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text" for="cppStandard">标　准</label>
+                        </div>
+                        <select class="custom-select" id="cppStandard">
+                            <option value="c11" selected>C11</option>
+                            <option value="c99">C99</option>
+                            <option value="c89">C89</option>
+                        </select>
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                            <label class="input-group-text" for="pedantic">严格性</label>
+                        </div>
+                        <select class="custom-select" id="pedantic">
+                            <option value="cpp-pedantic-errors">pedantic-errors</option>
+                            <option value="cpp-pedantic" selected>pedantic</option>
+                            <option value="cpp-no-pedantic">none</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-lg btn-primary btn-block" onclick="compile();" id="exeButton" title="快捷键 Ctrl+Enter">编译并运行</button>
+                </div>
+                <div class="row mb-3">
+                    <h3>关于</h3>
+                    <p>仅界面由谷雨同学制作。您可以前往<a
+                            href="https://github.com/melpon/wandbox/blob/master/kennel2/API.rst">此处</a>查看编译工具 API 文档。
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <div class="row mb-3">
+                    <div class="col">
+                        <h3>源代码</h3>
+                        <div class="input-group">
+                            <div class="form-control" id="editor"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h3>输入&nbsp;<small>Input</small>
+                            <i class="iconfont icon-iconfontquestion" data-trigger="hover" data-toggle="popover"
+                                title="帮助" data-content="由于网页的限制，您需要将程序的输入内容(stdin)提前写在下面的文本框中。所以您无法交互式地运行程序。">
+                            </i>
+                        </h3>
+                        <div class="input-group">
+                            <textarea class="form-control" id="stdin" rows="5"></textarea>
+                        </div>
+
+                    </div>
+                    <div class="col-md-6">
+                        <h3>输出&nbsp;<small>Output</small>
+                            <i class="iconfont icon-iconfontquestion" data-trigger="hover" data-toggle="popover"
+                                title="帮助" data-content="编译并运行后，输出(stdout)和程序错误信息(stderr)都会出现在这里。如果出现错误，字体将变为红色。">
+                            </i>
+                        </h3>
+                        <div class="input-group">
+                            <textarea class="form-control disabled" readonly id="stdout" rows="5"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <h3>编译信息</h3>
+                <p id="compilerMessage" class="alert alert-light">（无）</p>
+            </div>
+        </div>
+
+    </div>
+    <div id="notify" class="toast" data-delay="1500">
+        <div class="toast-header">
+            <span id="toastIcon">&#9632;&nbsp;</span>
+            <strong class="mr-auto">提示</strong>
+            <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+        <div class="toast-body"></div>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+
+</html>
