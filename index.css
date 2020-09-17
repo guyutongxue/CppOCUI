@@ -11,7 +11,7 @@
     background-color: white;
 }
 
-#compilerMessage {
+.alert {
     font-size  : smaller;
     font-family: var(--code-font-family);
     white-space: pre-wrap;
@@ -24,6 +24,7 @@ textarea {
 
 #stdout.error-output {
     background-color: #f8d7da;
+    color: #dc3545;
 }
 
 #notify {

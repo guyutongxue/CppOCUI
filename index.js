@@ -1,109 +1,228 @@
-var editor = ace.edit("editor");
+require.config({ paths: { vs: 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/vs' } })
+
+// https://github.com/egoist/vue-monaco
+window.MonacoEnvironment = {
+    getWorkerUrl: function (workerId, label) {
+        return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+        self.MonacoEnvironment = {
+          baseUrl: 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/'
+        };
+        importScripts('https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/vs/base/worker/workerMain.js');`)}`
+    }
+}
 
 /**
- * @param {boolean} value
+ * 
+ * @param {("success"|"error"|"warning")} type 
  */
-function buttonEnable(value) {
-    if (value === false) {
-        $('#exeButton').attr('disabled', '');
-        $('#exeButton').html('<span class="spinner-border" role="status" aria-hidden="true"></span><span class="sr-only">处理中…</span>')
-    } else if (value === true) {
-        $('#exeButton').removeAttr('disabled');
-        $('#exeButton').html('编译并运行')
+function showToast(type) {
+    switch (type) {
+        case "success":
+            $('#notify').children('.toast-body').text('成功编译并运行完毕。');
+            $('#toastIcon').addClass('text-success');
+            break;
+        case "error":
+            $('#notify').children('.toast-body').text('编译出现错误。');
+            $('#toastIcon').addClass('text-danger');
+            break;
+        case "warning":
+            $('#notify').children('.toast-body').text('编译完成，但存在警告。');
+            $('#toastIcon').addClass('text-warning');
+            break;
     }
+    $('#notify').toast('show');
 }
-/**
- * @param {string|boolean} text
- */
-function refreshMessage(text) {
-    $('#toastIcon').removeClass();
-    $('#stdout').removeClass('error-output text-danger');
-    $('#compilerMessage').removeClass('alert-light alert-warning alert-danger alert-success');
-    // compile success
-    if (text === true) {
-        $('#compilerMessage').addClass('alert-success').text('（编译成功）');
-        $('#notify').children('.toast-body').text('成功编译并运行完毕。');
-        $('#toastIcon').addClass('text-success');
-        $('#notify').toast('show');
-        return;
-    }
-    // not compiled yet
-    if (text === false) {
-        $('#compilerMessage').addClass('alert-light').text('（无）');
-        return;
-    }
-    // compile error (warning)
-    if (text.indexOf('error') != -1) {
-        $('#compilerMessage').addClass('alert-danger').text(text);
-        $('#notify').children('.toast-body').text('编译出现错误。');
-        $('#toastIcon').addClass('text-danger');
-        $('#notify').toast('show');
-    } else {
-        $('#compilerMessage').addClass('alert-warning').text(text);
-        $('#notify').children('.toast-body').text('编译完成，但存在警告。');
-        $('#toastIcon').addClass('text-warning');
-        $('#notify').toast('show');
-    }
-}
-function compile() {
-    buttonEnable(false);
-    const code = editor.getValue();
-    const stdin = $('#stdin').val();
-    let params = new URLSearchParams();
-    params.set('code', code);
-    window.history.replaceState(null, null, '?' + params.toString());
-    console.log('Request:')
-    const request = {
-        code: code,
-        stdin: stdin,
-        options: `${$('#pedantic').val()},${$('#cppStandard').val()}`,
-        compiler: 'gcc-10.1.0'
-    }
-    console.log(request);
-    console.log('Sending to Wandbox...')
-    $.ajax({
-        url: 'https://wandbox.org/api/compile.json',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify(request),
-        dataType: "json",
-        success: result => {
-            buttonEnable(true);
-            console.log('Success. Response content:');
-            console.log(result);
-            $('#stdout').val(result.program_message);
-            refreshMessage(true);
-            if ('compiler_message' in result) {
-                refreshMessage(result.compiler_message);
+
+Vue.component('my-monaco-editor',
+    {
+        props: [
+            'value'
+        ],
+        data: function () {
+            return {
+                code: this.value,
+                options: {
+                    fontSize: 16,
+                    lineNumbersMinChars: 2,
+                    minimap: {
+                        enabled: false
+                    }
+                }
+            };
+        },
+        template: `
+        <monaco-editor
+            ref="editor"
+            style="min-height: 350px; width: 100%;"
+            v-model="code" 
+            language="cpp"
+            v-on:change="$emit('change', $event)"
+            v-on:editorDidMount="editorDidMount"
+            v-bind:options="options"
+            v-bind:amdRequire="amdRequire"
+        />`,
+
+        methods: {
+            editorDidMount: function (editor) {
+                editor.addAction({
+                    // https://microsoft.github.io/monaco-editor/playground.html#interacting-with-the-editor-adding-an-action-to-an-editor-instance
+                    id: 'compile',
+                    label: 'Compile',
+                    keybindings: [
+                        // monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter
+                        2048 | 3
+                    ],
+                    precondition: null,
+                    keybindingContext: null,
+                    contextMenuGroupId: 'navigation',
+                    contextMenuOrder: 1.5,
+                    run: function () {
+                        vm.compile();
+                        return null;
+                    }
+                });
+            },
+            amdRequire: require
+        }
+    })
+
+var vm = new Vue({
+    el: "#app",
+    data: {
+        cppStandard: "c++2a",
+        standards: [
+            {
+                value: "c++2a",
+                name: "C++20"
+            },
+            {
+                value: "c++17",
+                name: "C++17"
+            },
+            {
+                value: "c++14",
+                name: "C++14"
+            },
+            {
+                value: "c++11",
+                name: "C++11"
+            },
+            {
+                value: "c++98",
+                name: "C++03"
             }
-            if ('program_error' in result) {
-                $('#stdout').addClass('error-output text-danger');
+        ],
+        pedantic: "cpp-pedantic",
+        pedantics: [
+            {
+                value: "cpp-pedantic-errors",
+                name: "pedantic-errors"
+            },
+            {
+                value: "cpp-pedantic",
+                name: "pedantic"
+            },
+            {
+                value: "cpp-no-pedantic",
+                name: "none"
+            }
+        ],
+        code: '',
+        input: '',
+        output: '',
+        inputHeader: `输入&nbsp;<small>Input</small>
+        <i class="iconfont icon-iconfontquestion" data-trigger="hover" data-toggle="popover"
+            title="帮助" data-content="由于网页的限制，您需要将程序的输入内容(stdin)提前写在下面的文本框中。所以您无法交互式地运行程序。">
+        </i>`,
+        outputHeader: `输出&nbsp;<small>Output</small>
+        <i class="iconfont icon-iconfontquestion" data-trigger="hover" data-toggle="popover"
+            title="帮助" data-content="编译并运行后，输出(stdout)和程序错误信息(stderr)都会出现在这里。如果出现错误，字体将变为红色。">
+        </i>`,
+        isCompiling: false,
+        compilerMessage: '（无）',
+        compilerMessageClass: 'alert-light',
+        isRuntimeError: false
+    },
+    methods: {
+        codeUpdated: function (code) {
+            this.code = code;
+        },
+        refreshMessage: function (text) {
+            $('#toastIcon').removeClass();
+            // compile success
+            if (text === true) {
+                this.compilerMessage = '（编译成功）';
+                this.compilerMessageClass = 'alert-success';
+                showToast("success");
+                return;
+            }
+            // not compiled yet
+            if (text === false) {
+                this.compilerMessage = '（无）';
+                this.compilerMessageClass = 'alert-light';
+                return;
+            }
+            this.compilerMessage = text;
+            // compile error (warning)
+            if (text.indexOf('error:') != -1) {
+                this.compilerMessageClass = 'alert-danger';
+                showToast("error");
+            } else {
+                this.compilerMessageClass = 'alert-warning';
+                showToast("warning");
             }
         },
-        error: xhr => {
-            buttonEnable(true);
-            alert('发送编译请求时出现错误，请重试。');
-            console.error('Error occured while sending request：', xhr.statusText);
-            console.log(xhr);
-            refreshMessage(false);
+        compile: function () {
+            this.isCompiling = true;
+            const code = this.code;
+            const stdin = this.input;
+            let params = new URLSearchParams();
+            params.set('code', code);
+            window.history.replaceState(null, null, '?' + params.toString());
+            console.log('Request:')
+            const request = {
+                code: code,
+                stdin: stdin,
+                options: `${this.pedantic},${this.cppStandard}`,
+                compiler: 'gcc-10.1.0'
+            }
+            console.log(request);
+            console.log('Sending to Wandbox...')
+            fetch('https://wandbox.org/api/compile.json', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            })
+                .then(response => response.json())
+                .then(result => {
+                    this.isCompiling = false;
+                    console.log('Success. Response content:');
+                    console.log(result);
+                    this.output = result.program_message;
+                    this.refreshMessage(true);
+                    if ('compiler_message' in result) {
+                        this.refreshMessage(result.compiler_message);
+                    }
+                    this.isRuntimeError = ('program_error' in result);
+                })
+                .catch(err => {
+                    this.isCompiling = false;
+                    alert('发送编译请求时出现错误，请重试。');
+                    console.error('Error occured while sending request：', err);
+                    this.refreshMessage(false);
+                });
         }
-    });
-}
-
-editor.setTheme("ace/theme/clouds");
-editor.session.setMode("ace/mode/c_cpp");
-editor.commands.addCommand({
-    name: "myCommand",
-    bindKey: { win: "Ctrl-Enter", mac: "Command-Enter" },
-    exec: () => compile()
-});
-editor.focus();
-
-{
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('code')) {
-        editor.setValue(params.get('code'));
-        editor.clearSelection();
+    },
+    created: function () {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('code')) {
+            this.code = params.get('code');
+        }
+    },
+    mounted: function () {
+        $('[data-toggle="popover"]').popover();
     }
-    $('[data-toggle="popover"]').popover();
-}
+})
+

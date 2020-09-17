@@ -9,18 +9,16 @@
     <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
     <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/4.5.0/js/bootstrap.min.js"></script>
-    <!-- Ace Editor -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/ace.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/ext-beautify.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/ext-language_tools.min.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/mode-c_cpp.min.js"></script>
 
-    <script src="https://cdn.bootcdn.net/ajax/libs/ace/1.4.12/theme-clouds.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/vue-monaco@1.2.1/dist/vue-monaco.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/vs/loader.js"></script>
     <link href="index.css" rel="stylesheet">
 </head>
 
 <body>
-    <div class="container">
+    <div class="container" id="app">
         <div class="px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
             <h1 class="display-4">C++ 在线编译运行</h1>
             <p class="lead">由 <a href="https://wandbox.org/" target="_blank">Wandbox</a> 提供编译运行 API</p>
@@ -40,67 +38,62 @@
                         <div class="input-group-prepend">
                             <label class="input-group-text" for="cppStandard">标　准</label>
                         </div>
-                        <select class="custom-select" id="cppStandard">
-                            <option value="c++2a" selected>C++20（部分）</option>
-                            <option value="c++17">C++17</option>
-                            <option value="c++14">C++14</option>
-                            <option value="c++11">C++11</option>
-                            <option value="c++98">C++03</option>
+                        <select class="custom-select" id="cppStandard" v-model="cppStandard">
+                            <option v-for="i of standards" v-bind:value="i.value"> {{i.name}} </option>
                         </select>
                     </div>
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
                             <label class="input-group-text" for="pedantic">严格性</label>
                         </div>
-                        <select class="custom-select" id="pedantic">
-                            <option value="cpp-pedantic-errors">pedantic-errors</option>
-                            <option value="cpp-pedantic" selected>pedantic</option>
-                            <option value="cpp-no-pedantic">none</option>
+                        <select class="custom-select" id="pedantic" v-model="pedantic">
+                            <option v-for="i of pedantics" v-bind:value="i.value"> {{i.name}} </option>
                         </select>
                     </div>
-                    <button class="btn btn-lg btn-primary btn-block" onclick="compile();" id="exeButton" title="快捷键 Ctrl+Enter">编译并运行</button>
+                    <button class="btn btn-lg btn-primary btn-block" v-on:click="compile" v-bind:disabled="isCompiling"
+                        title="快捷键 Ctrl+Enter">
+                        <span v-if="isCompiling">
+                            <span class="spinner-border" role="status" aria-hidden="true"></span>
+                            <span class="sr-only">处理中…</span>
+                        </span>
+                        <span v-else>编译并运行</span>
+                    </button>
                 </div>
                 <div class="row mb-3">
                     <h3>关于</h3>
                     <p>仅界面由谷雨同学制作。您可以前往<a
                             href="https://github.com/melpon/wandbox/blob/master/kennel2/API.rst">此处</a>查看编译工具 API 文档。
                     </p>
+                    <p>这是用于练习 <img height="15" src="https://vuejs.org/images/logo.png"> Vue 的版本。</p>
                 </div>
             </div>
             <div class="col-md-9">
                 <div class="row mb-3">
                     <div class="col">
                         <h3>源代码</h3>
-                        <div class="input-group">
-                            <div class="form-control" id="editor"></div>
+                        <div class="input-group form-control" style="height: auto;">
+                            <my-monaco-editor v-bind:value="code" v-on:change="codeUpdated"></my-monaco-editor>
                         </div>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <h3>输入&nbsp;<small>Input</small>
-                            <i class="iconfont icon-iconfontquestion" data-trigger="hover" data-toggle="popover"
-                                title="帮助" data-content="由于网页的限制，您需要将程序的输入内容(stdin)提前写在下面的文本框中。所以您无法交互式地运行程序。">
-                            </i>
-                        </h3>
+                        <h3 v-html="inputHeader"></h3>
                         <div class="input-group">
-                            <textarea class="form-control" id="stdin" rows="5"></textarea>
+                            <textarea class="form-control" v-model="input" rows="5"></textarea>
                         </div>
 
                     </div>
                     <div class="col-md-6">
-                        <h3>输出&nbsp;<small>Output</small>
-                            <i class="iconfont icon-iconfontquestion" data-trigger="hover" data-toggle="popover"
-                                title="帮助" data-content="编译并运行后，输出(stdout)和程序错误信息(stderr)都会出现在这里。如果出现错误，字体将变为红色。">
-                            </i>
-                        </h3>
+                        <h3 v-html="outputHeader"></h3>
                         <div class="input-group">
-                            <textarea class="form-control disabled" readonly id="stdout" rows="5"></textarea>
+                            <textarea class="form-control disabled" v-bind:class="isRuntimeError ? 'error-output' : '' "
+                                v-model="output" readonly id="stdout" rows="5"></textarea>
                         </div>
                     </div>
                 </div>
                 <h3>编译信息</h3>
-                <p id="compilerMessage" class="alert alert-light">（无）</p>
+                <p class="alert" v-bind:class="compilerMessageClass">{{compilerMessage}}</p>
             </div>
         </div>
 
