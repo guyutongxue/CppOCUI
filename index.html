@@ -13,7 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <!-- Monaco Editor -->
     <script src="https://cdn.jsdelivr.net/npm/vue-monaco@1.2.1/dist/vue-monaco.js"></script>
-    <script src="https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/vs/loader.js"></script>
+    <script src="https://cdn.staticfile.org/monaco-editor/0.20.0/min/vs/loader.js"></script>
     <link href="index.css" rel="stylesheet">
 </head>
 
@@ -71,8 +71,8 @@
                 <div class="row mb-3">
                     <div class="col">
                         <h3>源代码</h3>
-                        <div class="input-group form-control" style="height: auto;">
-                            <my-monaco-editor v-bind:value="code" v-on:change="codeUpdated"></my-monaco-editor>
+                        <div class="input-group form-control" style="height: 350px;">
+                            <my-monaco-editor v-model="code"></my-monaco-editor>
                         </div>
                     </div>
                 </div>

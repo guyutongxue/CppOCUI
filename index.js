@@ -1,13 +1,13 @@
-require.config({ paths: { vs: 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/vs' } })
+require.config({ paths: { vs: 'https://cdn.staticfile.org/monaco-editor/0.20.0/min/vs' } })
 
 // https://github.com/egoist/vue-monaco
 window.MonacoEnvironment = {
     getWorkerUrl: function (workerId, label) {
         return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
         self.MonacoEnvironment = {
-          baseUrl: 'https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/'
+          baseUrl: 'https://cdn.staticfile.org/monaco-editor/0.20.0/min/'
         };
-        importScripts('https://cdn.bootcdn.net/ajax/libs/monaco-editor/0.10.0/min/vs/base/worker/workerMain.js');`)}`
+        importScripts('https://cdn.staticfile.org/monaco-editor/0.20.0/min/vs/base/worker/workerMain.js');`)}`
     }
 }
 
@@ -46,17 +46,18 @@ Vue.component('my-monaco-editor',
                     lineNumbersMinChars: 2,
                     minimap: {
                         enabled: false
-                    }
+                    },
+                    automaticLayout: true
                 }
             };
         },
         template: `
         <monaco-editor
             ref="editor"
-            style="min-height: 350px; width: 100%;"
-            v-model="code" 
+            style="height: 100%; width: 100%;"
+            v-model="code"
             language="cpp"
-            v-on:change="$emit('change', $event)"
+            v-on:change="$emit('input', $event)"
             v-on:editorDidMount="editorDidMount"
             v-bind:options="options"
             v-bind:amdRequire="amdRequire"
@@ -69,16 +70,10 @@ Vue.component('my-monaco-editor',
                     id: 'compile',
                     label: 'Compile',
                     keybindings: [
-                        // monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter
-                        2048 | 3
+                        monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter
                     ],
-                    precondition: null,
-                    keybindingContext: null,
-                    contextMenuGroupId: 'navigation',
-                    contextMenuOrder: 1.5,
                     run: function () {
                         vm.compile();
-                        return null;
                     }
                 });
             },
