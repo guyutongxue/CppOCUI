@@ -57,7 +57,7 @@ function compile() {
         code: code,
         stdin: stdin,
         options: `${$('#pedantic').val()},${$('#cppStandard').val()}`,
-        compiler: 'gcc-10.1.0-c'
+        compiler: 'gcc-11.1.0-c'
     }
     console.log(request);
     console.log('Sending to Wandbox...')
@@ -90,6 +90,11 @@ function compile() {
     });
 }
 
+editor.setOptions({
+    enableBasicAutocompletion: true,
+    enableSnippets: true,
+    enableLiveAutocompletion: true
+});
 editor.setTheme("ace/theme/clouds");
 editor.session.setMode("ace/mode/c_cpp");
 editor.commands.addCommand({
